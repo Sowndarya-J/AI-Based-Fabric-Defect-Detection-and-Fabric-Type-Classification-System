@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environment
+venv/
+.venv/
+
+# IDE
+.vscode/
+.snapshots/
+
+# Database & outputs
+fabric_inspections.db
+Fabric_Report.pdf
+results.csv
+inspection_history.csv
+
+# Generated images
+saved_inspections/
+detected_image.jpg
+
+# Streamlit secrets
+.streamlit/secrets.toml
