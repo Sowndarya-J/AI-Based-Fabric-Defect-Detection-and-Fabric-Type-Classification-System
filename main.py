@@ -9,6 +9,23 @@ from auth import ensure_session, init_user_db
 
 from app_pages.login_page import show_login_page
 from app_pages.homepage_page import show_homepage_page
+from app_pages.image_upload_page import show_image_upload_page
+from app_pages.video_upload_page import show_video_upload_page
+from app_pages.model_metrics_page import show_model_metrics_page
+
+# Optional admin pages
+ADMIN_DASHBOARD_AVAILABLE = True
+LIVE_ADMIN_AVAILABLE = True
+
+try:
+    from app_pages.admin_dashboard_page import show_admin_dashboard_page
+except Exception:
+    ADMIN_DASHBOARD_AVAILABLE = False
+
+try:
+    from app_pages.live_admin_page import show_live_admin_page
+except Exception:
+    LIVE_ADMIN_AVAILABLE = False
 
 st.set_page_config(
     page_title="Fabric Defect System",
@@ -20,6 +37,21 @@ ensure_session()
 init_user_db()
 
 if st.session_state.get("logged_in"):
+    role = st.session_state.get("role")
+
+    pages = [
+        "Homepage",
+        "Image Upload",
+        "Video Upload",
+        "Model Metrics",
+    ]
+
+    if role == "admin":
+        if ADMIN_DASHBOARD_AVAILABLE:
+            pages.append("Admin Dashboard")
+        if LIVE_ADMIN_AVAILABLE:
+            pages.append("Live Admin")
+
     with st.sidebar:
         st.markdown(f"### 👤 {st.session_state.user}")
         st.caption(f"Role: {st.session_state.role}")
@@ -27,7 +59,7 @@ if st.session_state.get("logged_in"):
         if st.session_state.get("email"):
             st.caption(f"Email: {st.session_state.email}")
 
-        page = st.radio("Navigation", ["Homepage"])
+        page = st.radio("Navigation", pages)
 
         if st.button("Logout", use_container_width=True):
             st.session_state.logged_in = False
@@ -42,3 +74,19 @@ if page == "Login":
     show_login_page()
 elif page == "Homepage":
     show_homepage_page()
+elif page == "Image Upload":
+    show_image_upload_page()
+elif page == "Video Upload":
+    show_video_upload_page()
+elif page == "Model Metrics":
+    show_model_metrics_page()
+elif page == "Admin Dashboard":
+    if st.session_state.get("role") != "admin":
+        st.error("❌ Only Admin can access this page.")
+        st.stop()
+    show_admin_dashboard_page()
+elif page == "Live Admin":
+    if st.session_state.get("role") != "admin":
+        st.error("❌ Only Admin can access this page.")
+        st.stop()
+    show_live_admin_page()
