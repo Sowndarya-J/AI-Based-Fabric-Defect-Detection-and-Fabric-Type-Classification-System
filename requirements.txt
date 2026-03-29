@@ -6,8 +6,6 @@ pandas
 matplotlib
 reportlab
 numpy
-av
-streamlit-webrtc
 streamlit-option-menu
 supabase
 streamlit-autorefresh
