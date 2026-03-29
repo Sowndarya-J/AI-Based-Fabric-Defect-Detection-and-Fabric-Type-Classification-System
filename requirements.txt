@@ -1,0 +1,15 @@
+streamlit
+ultralytics
+opencv-python
+pillow
+pandas
+matplotlib
+reportlab
+numpy
+av
+streamlit-webrtc
+streamlit-option-menu
+supabase
+streamlit-autorefresh
+Authlib>=1.3.2
+typing_extensions>=4.14.0
