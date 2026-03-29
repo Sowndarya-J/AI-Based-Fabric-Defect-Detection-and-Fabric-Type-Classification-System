@@ -4,18 +4,26 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import streamlit as st
 
-
 from theme import apply_theme
 from auth import ensure_session, init_user_db
 
 from app_pages.login_page import show_login_page
 from app_pages.homepage_page import show_homepage_page
-from app_pages.webcam_realtime_page import show_webcam_realtime_page
 from app_pages.image_upload_page import show_image_upload_page
 from app_pages.video_upload_page import show_video_upload_page
 from app_pages.admin_dashboard_page import show_admin_dashboard_page
 from app_pages.live_admin_page import show_live_admin_page
 from app_pages.model_metrics_page import show_model_metrics_page
+
+# Optional webcam import
+WEBCAM_AVAILABLE = True
+WEBCAM_IMPORT_ERROR = ""
+
+try:
+    from app_pages.webcam_realtime_page import show_webcam_realtime_page
+except Exception as e:
+    WEBCAM_AVAILABLE = False
+    WEBCAM_IMPORT_ERROR = str(e)
 
 st.set_page_config(
     page_title="Fabric Defect System",
@@ -29,24 +37,23 @@ init_user_db()
 if st.session_state.get("logged_in"):
     role = st.session_state.get("role")
 
+    common_pages = [
+        "Homepage",
+        "Image Upload",
+        "Video Upload",
+        "Model Metrics",
+    ]
+
+    if WEBCAM_AVAILABLE:
+        common_pages.insert(1, "Webcam Realtime")
+
     if role == "admin":
-        pages = [
-            "Homepage",
-            "Webcam Realtime",
-            "Image Upload",
-            "Video Upload",
+        pages = common_pages + [
             "Admin Dashboard",
             "Live Admin",
-            "Model Metrics",
         ]
     else:
-        pages = [
-            "Homepage",
-            "Webcam Realtime",
-            "Image Upload",
-            "Video Upload",
-            "Model Metrics",
-        ]
+        pages = common_pages
 
     with st.sidebar:
         st.markdown(f"### 👤 {st.session_state.user}")
@@ -56,6 +63,9 @@ if st.session_state.get("logged_in"):
             st.caption(f"Email: {st.session_state.email}")
 
         page = st.radio("Navigation", pages)
+
+        if not WEBCAM_AVAILABLE:
+            st.warning("Webcam page is disabled in this deployment.")
 
         if st.button("Logout", use_container_width=True):
             st.session_state.logged_in = False
@@ -68,23 +78,35 @@ else:
 
 if page == "Login":
     show_login_page()
+
 elif page == "Homepage":
     show_homepage_page()
+
 elif page == "Webcam Realtime":
+    if not WEBCAM_AVAILABLE:
+        st.error("❌ Webcam page is not available in this deployment.")
+        if WEBCAM_IMPORT_ERROR:
+            st.caption(f"Import error: {WEBCAM_IMPORT_ERROR}")
+        st.stop()
     show_webcam_realtime_page()
+
 elif page == "Image Upload":
     show_image_upload_page()
+
 elif page == "Video Upload":
     show_video_upload_page()
+
 elif page == "Admin Dashboard":
     if st.session_state.get("role") != "admin":
         st.error("❌ Only Admin can access this page.")
         st.stop()
     show_admin_dashboard_page()
+
 elif page == "Live Admin":
     if st.session_state.get("role") != "admin":
         st.error("❌ Only Admin can access this page.")
         st.stop()
     show_live_admin_page()
+
 elif page == "Model Metrics":
     show_model_metrics_page()
