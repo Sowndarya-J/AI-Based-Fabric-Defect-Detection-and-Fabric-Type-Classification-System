@@ -7,10 +7,8 @@ from email.message import EmailMessage
 from pathlib import Path
 from datetime import datetime
 
-import cv2
 import numpy as np
 import pandas as pd
-from ultralytics import YOLO
 from PIL import Image
 
 USERS_FILE = "users.json"
@@ -31,9 +29,11 @@ def save_users(users_dict):
 
 # ---------- MODEL ----------
 _model = None
+
 def get_model():
     global _model
     if _model is None:
+        from ultralytics import YOLO
         _model = YOLO("best.pt")  # keep best.pt in main folder
     return _model
 
@@ -51,7 +51,6 @@ def init_db():
     con = sqlite3.connect(DB_PATH)
     cur = con.cursor()
 
-    # base table
     cur.execute("""
     CREATE TABLE IF NOT EXISTS inspections (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -67,7 +66,6 @@ def init_db():
     )
     """)
 
-    # schema upgrades (safe add if old DB)
     if not _column_exists(cur, "inspections", "source"):
         cur.execute("ALTER TABLE inspections ADD COLUMN source TEXT")
     if not _column_exists(cur, "inspections", "defects_json"):
@@ -103,16 +101,22 @@ def delete_inspection(row_id: int):
 
 # ---------- SAVE IMAGES ----------
 def save_images(original_pil: Image.Image, annotated_bgr: np.ndarray, prefix: str):
+    import cv2
+
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     base = f"{prefix}_{ts}"
     original_path = SAVE_DIR / f"{base}_original.jpg"
     annotated_path = SAVE_DIR / f"{base}_annotated.jpg"
+
     original_pil.save(original_path)
     cv2.imwrite(str(annotated_path), annotated_bgr)
+
     return str(original_path), str(annotated_path)
 
 # ---------- HEATMAP ----------
 def build_heatmap(img_shape, boxes_xyxy):
+    import cv2
+
     h, w = img_shape[:2]
     heat = np.zeros((h, w), dtype=np.float32)
 
