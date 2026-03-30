@@ -34,7 +34,7 @@ def get_model():
     global _model
     if _model is None:
         from ultralytics import YOLO
-        _model = YOLO("best.pt")  # keep best.pt in main folder
+        _model = YOLO("best.pt")
     return _model
 
 # ---------- DB HELPERS ----------
@@ -46,7 +46,6 @@ def _column_exists(cur, table: str, col: str) -> bool:
 def init_db():
     """
     Creates DB if not exists and safely upgrades schema by adding missing columns.
-    This avoids needing to delete DB when you add new features.
     """
     con = sqlite3.connect(DB_PATH)
     cur = con.cursor()
@@ -75,6 +74,7 @@ def init_db():
     con.close()
 
 def insert_inspection(dt, user, source, total, high, status, orig_path, ann_path, defects_json):
+    init_db()  # ensure table exists
     con = sqlite3.connect(DB_PATH)
     cur = con.cursor()
     cur.execute("""
@@ -85,6 +85,7 @@ def insert_inspection(dt, user, source, total, high, status, orig_path, ann_path
     con.close()
 
 def read_inspections(limit=300):
+    init_db()
     con = sqlite3.connect(DB_PATH)
     df = pd.read_sql_query(
         f"SELECT * FROM inspections ORDER BY id DESC LIMIT {limit}", con
@@ -93,6 +94,7 @@ def read_inspections(limit=300):
     return df
 
 def delete_inspection(row_id: int):
+    init_db()
     con = sqlite3.connect(DB_PATH)
     cur = con.cursor()
     cur.execute("DELETE FROM inspections WHERE id=?", (row_id,))
