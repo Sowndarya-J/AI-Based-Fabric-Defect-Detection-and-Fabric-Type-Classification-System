@@ -6,6 +6,7 @@ import streamlit as st
 
 from theme import apply_theme
 from auth import ensure_session, init_user_db
+from utils import init_db
 
 # Always-safe pages
 from app_pages.login_page import show_login_page
@@ -74,6 +75,7 @@ st.set_page_config(
 apply_theme()
 ensure_session()
 init_user_db()
+init_db()
 
 if st.session_state.get("logged_in"):
     role = st.session_state.get("role")
@@ -107,16 +109,12 @@ if st.session_state.get("logged_in"):
 
         page = st.radio("Navigation", pages)
 
-        # Optional page warnings
         if not IMAGE_AVAILABLE:
             st.warning("Image Upload page is disabled in this deployment.")
-
         if not VIDEO_AVAILABLE:
             st.warning("Video Upload page is disabled in this deployment.")
-
         if not WEBCAM_AVAILABLE:
             st.warning("Webcam Realtime page is disabled in this deployment.")
-
         if not MODEL_METRICS_AVAILABLE:
             st.warning("Model Metrics page is disabled in this deployment.")
 
