@@ -54,7 +54,7 @@ FABRIC_INFO = {
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Use current Python in local + cloud
+# Use current Python interpreter in local and cloud
 CLASSIFIER_PYTHON = sys.executable
 CLASSIFIER_SCRIPT = os.path.join(BASE_DIR, "classifier_runner.py")
 
@@ -62,11 +62,13 @@ CLASSIFIER_SCRIPT = os.path.join(BASE_DIR, "classifier_runner.py")
 def _extract_json_from_stdout(stdout_text: str):
     lines = [line.strip() for line in stdout_text.splitlines() if line.strip()]
 
+    # Try full output first
     try:
         return json.loads(stdout_text.strip())
     except Exception:
         pass
 
+    # Then try line by line from bottom
     for line in reversed(lines):
         try:
             return json.loads(line)
@@ -97,7 +99,9 @@ def predict_fabric_type(pil_image):
             )
 
         if not stdout:
-            raise RuntimeError(f"Classifier returned empty output.\nSTDERR:\n{stderr}")
+            raise RuntimeError(
+                f"Classifier returned empty output.\nSTDERR:\n{stderr}"
+            )
 
         result = _extract_json_from_stdout(stdout)
 
