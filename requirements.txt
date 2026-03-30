@@ -12,3 +12,7 @@ tensorflow==2.15.0
 supabase
 streamlit-autorefresh
 Authlib>=1.3.2
+av
+streamlit-webrtc
+opencv-python-headless==4.9.0.80
+
