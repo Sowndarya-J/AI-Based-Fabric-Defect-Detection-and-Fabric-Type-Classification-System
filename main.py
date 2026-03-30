@@ -7,11 +7,14 @@ import streamlit as st
 from theme import apply_theme
 from auth import ensure_session, init_user_db
 
+# Always-safe pages
 from app_pages.login_page import show_login_page
 from app_pages.homepage_page import show_homepage_page
-from app_pages.image_upload_page import show_image_upload_page
 
 # Optional page imports
+IMAGE_AVAILABLE = True
+IMAGE_IMPORT_ERROR = ""
+
 VIDEO_AVAILABLE = True
 VIDEO_IMPORT_ERROR = ""
 
@@ -26,6 +29,12 @@ LIVE_ADMIN_IMPORT_ERROR = ""
 
 MODEL_METRICS_AVAILABLE = True
 MODEL_METRICS_IMPORT_ERROR = ""
+
+try:
+    from app_pages.image_upload_page import show_image_upload_page
+except Exception as e:
+    IMAGE_AVAILABLE = False
+    IMAGE_IMPORT_ERROR = str(e)
 
 try:
     from app_pages.video_upload_page import show_video_upload_page
@@ -69,10 +78,10 @@ init_user_db()
 if st.session_state.get("logged_in"):
     role = st.session_state.get("role")
 
-    pages = [
-        "Homepage",
-        "Image Upload",
-    ]
+    pages = ["Homepage"]
+
+    if IMAGE_AVAILABLE:
+        pages.append("Image Upload")
 
     if VIDEO_AVAILABLE:
         pages.append("Video Upload")
@@ -99,11 +108,23 @@ if st.session_state.get("logged_in"):
         page = st.radio("Navigation", pages)
 
         # Optional page warnings
+        if not IMAGE_AVAILABLE:
+            st.warning("Image Upload page is disabled in this deployment.")
+
         if not VIDEO_AVAILABLE:
             st.warning("Video Upload page is disabled in this deployment.")
 
         if not WEBCAM_AVAILABLE:
             st.warning("Webcam Realtime page is disabled in this deployment.")
+
+        if not MODEL_METRICS_AVAILABLE:
+            st.warning("Model Metrics page is disabled in this deployment.")
+
+        if role == "admin":
+            if not ADMIN_DASHBOARD_AVAILABLE:
+                st.warning("Admin Dashboard page is disabled in this deployment.")
+            if not LIVE_ADMIN_AVAILABLE:
+                st.warning("Live Admin page is disabled in this deployment.")
 
         if st.button("Logout", use_container_width=True):
             st.session_state.logged_in = False
@@ -121,6 +142,11 @@ elif page == "Homepage":
     show_homepage_page()
 
 elif page == "Image Upload":
+    if not IMAGE_AVAILABLE:
+        st.error("❌ Image Upload page is not available in this deployment.")
+        if IMAGE_IMPORT_ERROR:
+            st.caption(f"Import error: {IMAGE_IMPORT_ERROR}")
+        st.stop()
     show_image_upload_page()
 
 elif page == "Video Upload":
