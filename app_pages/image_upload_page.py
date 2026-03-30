@@ -1,8 +1,8 @@
 def show_image_upload_page():
     import os
     import sys
+    import streamlit as st
 
-    # Add project root to Python path
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     if project_root not in sys.path:
         sys.path.insert(0, project_root)
@@ -10,15 +10,13 @@ def show_image_upload_page():
     try:
         import cv2
     except Exception as e:
-        import streamlit as st
-        st.error("OpenCV is not available in this deployment.")
+        st.error("Image Upload page is not available in this deployment because OpenCV failed to load.")
         st.caption(str(e))
         st.stop()
 
     import json
     import pandas as pd
     import matplotlib.pyplot as plt
-    import streamlit as st
     from PIL import Image
     from datetime import datetime
 
@@ -52,16 +50,13 @@ def show_image_upload_page():
     uploaded_file = st.file_uploader("Upload Fabric Image", type=["jpg", "jpeg", "png"])
 
     if uploaded_file is None:
-        st.info("Upload an image first. After upload, the system will automatically predict fabric type.")
+        st.info("Upload an image first.")
         return
 
     image = Image.open(uploaded_file).convert("RGB")
     st.image(image, caption="Uploaded Image", width=500)
 
     if st.button("Detect Defects (Image)"):
-        # --------------------------------
-        # FABRIC CLASSIFICATION
-        # --------------------------------
         fabric_type = "Unknown"
         fabric_conf = None
 
@@ -69,17 +64,10 @@ def show_image_upload_page():
             fabric_type, fabric_conf = predict_fabric_type(image)
             st.success(f"Detected Fabric Type: {fabric_type}")
             render_fabric_info(st, fabric_type, fabric_conf)
-            st.caption(
-                "Fabric type is automatically predicted by a separate classification model. "
-                "Current model accuracy depends on training data quality."
-            )
         except Exception as e:
             st.error("Fabric classification failed.")
             st.exception(e)
 
-        # --------------------------------
-        # DEFECT DETECTION
-        # --------------------------------
         try:
             results = model(image, conf=confidence_threshold)
             result = results[0]
@@ -144,7 +132,6 @@ def show_image_upload_page():
                 st.image(overlay, caption="Heatmap Overlay", width=500)
 
             else:
-                df = pd.DataFrame([["No Defects", 0, "-"]], columns=["Defect Type", "Confidence (%)", "Severity"])
                 defect_data = []
                 st.success("🎉 No Defects Found — PERFECT FABRIC")
                 quality_status = "PASS"
@@ -152,9 +139,6 @@ def show_image_upload_page():
                 high_defects = 0
                 defect_count = {}
 
-            # --------------------------------
-            # SAVE RESULTS
-            # --------------------------------
             defects_json = json.dumps(defect_count, ensure_ascii=False)
 
             orig_path, ann_path = save_images(image, result_image, prefix=st.session_state.user)
@@ -177,9 +161,6 @@ def show_image_upload_page():
                 defects_json
             )
 
-            # --------------------------------
-            # PDF REPORT GENERATION
-            # --------------------------------
             st.subheader("📄 Generate PDF Report")
 
             pdf_file = f"report_{st.session_state.user}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
@@ -214,8 +195,6 @@ def show_image_upload_page():
                     elements.append(RLImage(ann_path, width=4 * inch, height=3 * inch))
                     elements.append(Spacer(1, 12))
 
-                elements.append(Paragraph("<b>Defect Details:</b>", styles["Heading3"]))
-
                 table_data = [["Defect Type", "Confidence (%)", "Severity"]]
                 if len(defect_data) > 0:
                     table_data.extend(defect_data)
@@ -233,14 +212,6 @@ def show_image_upload_page():
                     ("GRID", (0, 0), (-1, -1), 1, colors.black),
                 ])
                 elements.append(table)
-                elements.append(Spacer(1, 12))
-
-                if defect_count:
-                    elements.append(Paragraph("<b>Defect Summary:</b>", styles["Heading3"]))
-                    for defect_name, count in defect_count.items():
-                        elements.append(Paragraph(f"{defect_name}: {count}", styles["Normal"]))
-                else:
-                    elements.append(Paragraph("No defects found.", styles["Normal"]))
 
                 doc.build(elements)
 
@@ -253,38 +224,6 @@ def show_image_upload_page():
                         file_name=os.path.basename(pdf_path),
                         mime="application/pdf"
                     )
-
-            # --------------------------------
-            # EMAIL PDF
-            # --------------------------------
-            st.subheader("📧 Send PDF via Email")
-            email_to = st.text_input("Enter Email Address")
-
-            if st.button("Send Email"):
-                if email_to.strip():
-                    if os.path.exists(pdf_path):
-                        try:
-                            # Replace these with your configured sender credentials
-                            sender_email = "your_email@gmail.com"
-                            app_password = "your_app_password"
-                            subject = "Fabric Defect Inspection Report"
-                            body = "Please find the attached fabric defect inspection report."
-
-                            send_email_with_pdf(
-                                sender_email,
-                                app_password,
-                                email_to,
-                                subject,
-                                body,
-                                pdf_path
-                            )
-                            st.success(f"PDF sent successfully to {email_to}")
-                        except Exception as e:
-                            st.error(f"Failed to send email: {e}")
-                    else:
-                        st.warning("Please generate the PDF report first.")
-                else:
-                    st.warning("Please enter an email address.")
 
         except Exception as e:
             st.error("Defect detection failed.")
