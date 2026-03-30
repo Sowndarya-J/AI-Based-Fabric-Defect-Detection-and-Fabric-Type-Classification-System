@@ -7,8 +7,15 @@ def show_image_upload_page():
     if project_root not in sys.path:
         sys.path.insert(0, project_root)
 
+    try:
+        import cv2
+    except Exception as e:
+        import streamlit as st
+        st.error("OpenCV is not available in this deployment.")
+        st.caption(str(e))
+        st.stop()
+
     import json
-    import cv2
     import pandas as pd
     import matplotlib.pyplot as plt
     import streamlit as st
@@ -257,7 +264,20 @@ def show_image_upload_page():
                 if email_to.strip():
                     if os.path.exists(pdf_path):
                         try:
-                            send_email_with_pdf(email_to, pdf_path)
+                            # Replace these with your configured sender credentials
+                            sender_email = "your_email@gmail.com"
+                            app_password = "your_app_password"
+                            subject = "Fabric Defect Inspection Report"
+                            body = "Please find the attached fabric defect inspection report."
+
+                            send_email_with_pdf(
+                                sender_email,
+                                app_password,
+                                email_to,
+                                subject,
+                                body,
+                                pdf_path
+                            )
                             st.success(f"PDF sent successfully to {email_to}")
                         except Exception as e:
                             st.error(f"Failed to send email: {e}")
