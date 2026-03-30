@@ -2,6 +2,7 @@ import json
 import subprocess
 import tempfile
 import os
+import sys
 
 FABRIC_INFO = {
     "Cotton": {
@@ -51,24 +52,21 @@ FABRIC_INFO = {
     }
 }
 
-CLASSIFIER_PYTHON = r"C:\Users\Lenovo\Desktop\Fabric_Defect_App\venv_classifier\Scripts\python.exe"
-CLASSIFIER_SCRIPT = r"C:\Users\Lenovo\Desktop\Fabric_Defect_App\classifier_runner.py"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Use current Python in local + cloud
+CLASSIFIER_PYTHON = sys.executable
+CLASSIFIER_SCRIPT = os.path.join(BASE_DIR, "classifier_runner.py")
 
 
 def _extract_json_from_stdout(stdout_text: str):
-    """
-    TensorFlow may print logs to stdout.
-    So we try to parse the last valid JSON object line.
-    """
     lines = [line.strip() for line in stdout_text.splitlines() if line.strip()]
 
-    # Try whole output first
     try:
         return json.loads(stdout_text.strip())
     except Exception:
         pass
 
-    # Then try line by line from bottom
     for line in reversed(lines):
         try:
             return json.loads(line)
@@ -94,17 +92,12 @@ def predict_fabric_type(pil_image):
         stderr = (proc.stderr or "").strip()
 
         if proc.returncode != 0:
-            error_msg = (
-                f"Classifier failed.\n\n"
-                f"STDOUT:\n{stdout}\n\n"
-                f"STDERR:\n{stderr}"
+            raise RuntimeError(
+                f"Classifier failed.\n\nSTDOUT:\n{stdout}\n\nSTDERR:\n{stderr}"
             )
-            raise RuntimeError(error_msg)
 
         if not stdout:
-            raise RuntimeError(
-                f"Classifier returned empty output.\nSTDERR:\n{stderr}"
-            )
+            raise RuntimeError(f"Classifier returned empty output.\nSTDERR:\n{stderr}")
 
         result = _extract_json_from_stdout(stdout)
 
